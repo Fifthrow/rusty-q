@@ -113,7 +113,10 @@ impl Handle {
         let cquery = ffi::CString::new(query)?;
         let kptr = unsafe { kapi::k(self.handle, cquery.as_ptr(), kvoid()) };
         if kptr.is_null() {
-            return Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
+            return Err(Box::new(KError::new(
+                "Query failed".to_string(),
+                KErr::QueryFailed,
+            )));
         }
         Ok(unsafe { KOwned(&*kptr) })
     }
@@ -122,17 +125,23 @@ impl Handle {
         let cbk = ffi::CString::new(callback).unwrap();
         let kptr = kapi::k(-self.handle, cbk.as_ptr(), topic, object, kvoid());
         if (&*kptr).t == -128 {
-            println!("Error sending async data");// Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
+            println!("Error sending async data"); // Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
             KOwned(&*kptr);
         }
     }
 
-
-    pub unsafe fn sync_get(&self, function: &str, object: *const K) -> Result<KOwned, Box<dyn Error>> {
+    pub unsafe fn sync_get(
+        &self,
+        function: &str,
+        object: *const K,
+    ) -> Result<KOwned, Box<dyn Error>> {
         let cbk = ffi::CString::new(function)?;
         let kptr = kapi::k(self.handle, cbk.as_ptr(), object, kvoid());
         if kptr.is_null() {
-            return Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
+            return Err(Box::new(KError::new(
+                "Query failed".to_string(),
+                KErr::QueryFailed,
+            )));
         }
         Ok(KOwned(&*kptr))
     }
@@ -147,7 +156,10 @@ pub fn serialize(k: &KOwned) -> KResult<KOwned> {
     if kbindings::valid_stream(ser) {
         Ok(KOwned(ser))
     } else {
-        Err(KError::new("Invalid serialization".to_string(), KErr::EncodeFailed))
+        Err(KError::new(
+            "Invalid serialization".to_string(),
+            KErr::EncodeFailed,
+        ))
     }
 }
 
@@ -155,6 +167,9 @@ pub fn deserialize(ser: &KOwned) -> KResult<KOwned> {
     if kbindings::valid_stream(ser.0) {
         Ok(KOwned(kbindings::deserial(ser.0)))
     } else {
-        Err(KError::new("Invalid deserialization".to_string(), KErr::DecodeFailed))
+        Err(KError::new(
+            "Invalid deserialization".to_string(),
+            KErr::DecodeFailed,
+        ))
     }
 }

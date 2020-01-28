@@ -1,8 +1,8 @@
-extern crate rkdb;
+extern crate rustyq;
 extern crate num;
 
 use std::{thread, time};
-use rkdb::{
+use rustyq::{
     types::K,
     k::*,
     kbindings::*

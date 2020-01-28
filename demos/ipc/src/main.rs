@@ -1,8 +1,8 @@
 #![feature(box_patterns)]
 
-extern crate rkdb;
+extern crate rustyq;
 
-use rkdb::{
+use rustyq::{
     api,
     kbindings::*
 };

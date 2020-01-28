@@ -210,7 +210,9 @@ impl<'a> KVal<'a> {
             KVal::Float(KData::Atom(&mut v)) => kfloat(v),
             KVal::Float(KData::List(ref vals)) => klist::<f64>(9, vals),
             KVal::Symbol(KData::Atom(ref v)) => ksymbol(v),
-            KVal::Symbol(KData::List(ref vals)) => klist::<*const i8>(11, &intern_strings(vals.to_vec())),
+            KVal::Symbol(KData::List(ref vals)) => {
+                klist::<*const i8>(11, &intern_strings(vals.to_vec()))
+            }
             KVal::Timestamp(KData::Atom(&mut v)) => ktstamp(v),
             KVal::Timestamp(KData::List(ref vals)) => klist::<i64>(12, vals),
             KVal::Dict(k, v) => kdict(&k, &v),
@@ -224,7 +226,7 @@ impl<'a> KVal<'a> {
 }
 
 pub fn intern_strings(strs: Vec<String>) -> Vec<*const i8> {
-//pub fn intern_strings(strs: Vec<&str>) -> Vec<*const i8> {
+    //pub fn intern_strings(strs: Vec<&str>) -> Vec<*const i8> {
     unsafe {
         strs.into_iter()
             .map(|s| {
@@ -268,8 +270,10 @@ pub fn kbool(b: bool) -> &'static K {
 }
 
 pub fn kguid(g: [u8; 16]) -> &'static K {
-   unsafe { //let u: U = std::ptr::read(b.as_ptr() as *const U); //let u = U{g};
-     &*ku(U{g}) }
+    unsafe {
+        //let u: U = std::ptr::read(b.as_ptr() as *const U); //let u = U{g};
+        &*ku(U { g })
+    }
 }
 
 pub fn kbyte(b: u8) -> &'static K {
@@ -289,7 +293,7 @@ pub fn klong(j: i64) -> &'static K {
 }
 
 pub fn ktstamp(j: i64) -> &'static K {
-    unsafe { &*ktj(-12,j) }
+    unsafe { &*ktj(-12, j) }
 }
 
 pub fn kreal(e: f32) -> &'static K {

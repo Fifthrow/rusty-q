@@ -1,11 +1,11 @@
 [package]
-name = "rkdb"
-version = "0.4.0"
-authors = ["Rahul Powar <rahul@redsift.io>", "Peter Parkanyi <peter@redsift.io"]
+name = "rustyq"
+version = "0.0.1"
+authors = ["tech <tech@fifthrowtech.com>"]
 links = "kdb"
 build = "build.rs"
 description = "KDB-Rust embedding and IPC"
-repository = "https://github.com/redsift/rkdb"
+repository = "https://github.com/Fifthrow/rusty-q"
 readme = "README.md"
 license = "MIT"
 keywords = [ "q", "kdb" ]
@@ -22,12 +22,12 @@ lazy_static = "^1.1.0"
 syn = {version = "^0.14.7", features = ["full", "extra-traits"] }
 
 [lib]
-name = "rkdb"
+name = "rustyq"
 
 [features]
 api = []
 unchecked_utf8 = [] # Use faster but unsafe string conversion
 
 [badges]
-circle-ci = { repository = "redsift/rkdb", branch = "master" }
+circle-ci = { repository = "fifthrow/rusty-q", branch = "master" }
 maintenance = { status = "actively-developed" }

@@ -33,7 +33,10 @@ fn ksyms(fname: &str) -> Vec<String> {
 
     let syntax = syn::parse_file(&src).expect("Unable to parse file");
 
-    syntax.items.iter().map(|item| match item {
+    syntax
+        .items
+        .iter()
+        .map(|item| match item {
             syn::Item::ForeignMod(ref item_fn) => parse_fns(item_fn),
             _ => vec![],
         })
@@ -43,7 +46,7 @@ fn ksyms(fname: &str) -> Vec<String> {
 
 fn sym_file() -> std::path::PathBuf {
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR environment variable not provided");
-    
+
     Path::new(&out_dir).join(KDB_SYM_FILE)
 }
 
@@ -51,22 +54,32 @@ fn main() {
     let base = env::current_dir().unwrap();
 
     let src = base.join("src").join("k.rs");
-    
+
     let syms = ksyms(src.to_str().unwrap());
 
     let dest_path = sym_file();
 
-    let mut f = File::create(&dest_path)
-        .expect("Could not create file to store external KDB symbols");
-    
-    writeln!(f, "#[allow(dead_code)]")
-        .expect("Could not write to KDB symbol file header");
-    writeln!(f, "pub const SYMBOLS: [&'static str; {}] = {:?};", syms.len(), syms)
-        .expect("Could not write to KDB symbol file");   
+    let mut f =
+        File::create(&dest_path).expect("Could not create file to store external KDB symbols");
 
-    f.flush()
-        .expect("Could not flush write to KDB symbol");
+    writeln!(f, "#[allow(dead_code)]").expect("Could not write to KDB symbol file header");
+    writeln!(
+        f,
+        "pub const SYMBOLS: [&'static str; {}] = {:?};",
+        syms.len(),
+        syms
+    )
+    .expect("Could not write to KDB symbol file");
 
-    let dir = base.join("src").join("c");
-    println!("cargo:rustc-link-search={}", dir.to_str().unwrap());
+    f.flush().expect("Could not flush write to KDB symbol");
+
+    if let Ok(v) = std::env::var("LD_LIBRARY_PATH") {
+        v.split(":")
+            .map(|d| {
+                if d.len() > 0 {
+                    println!("cargo:rustc-link-search={}", d);
+                }
+            })
+            .for_each(drop);
+    };
 }
