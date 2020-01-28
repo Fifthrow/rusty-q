@@ -1,17 +1,19 @@
-use std::error::Error;
-use std::fmt;
-use std::ffi;
-use std::io;
-use std::sync::mpsc;
-use std::convert;
+use kapi;
 use kbindings;
 use kbindings::*;
-use kapi;
+use std::convert;
+use std::error::Error;
+use std::ffi;
+use std::fmt;
+use std::io;
+use std::sync::mpsc;
+
+use types::K;
 
 #[derive(Debug)]
 pub struct KError {
     desc: String,
-    pub kind: KErr
+    pub kind: KErr,
 }
 
 pub type KResult<T> = Result<T, KError>;
@@ -30,10 +32,7 @@ impl fmt::Display for KError {
 
 impl KError {
     pub fn new(s: String, kind: KErr) -> Self {
-        KError {
-            desc: s,
-            kind: kind
-        }
+        KError { desc: s, kind }
     }
 }
 
@@ -41,7 +40,7 @@ impl convert::From<io::Error> for KError {
     fn from(err: io::Error) -> KError {
         KError {
             desc: err.description().to_string(),
-            kind: KErr::IOErr
+            kind: KErr::IOErr,
         }
     }
 }
@@ -50,7 +49,7 @@ impl convert::From<mpsc::RecvError> for KError {
     fn from(err: mpsc::RecvError) -> KError {
         KError {
             desc: err.description().to_string(),
-            kind: KErr::RecvErr
+            kind: KErr::RecvErr,
         }
     }
 }
@@ -70,40 +69,72 @@ pub enum KErr {
     CorruptData,
     BadConfig,
     Generic,
-    WrongType
+    WrongType,
 }
 
+#[allow(dead_code)]
 pub struct Handle {
     host: String,
     port: i32,
     username: String,
-    handle: i32
+    handle: i32,
 }
 
 impl Handle {
-    pub fn connect(host: &str, port: i32, username: &str) -> Result<Handle, Box<Error>> {
-        let chost = try!(ffi::CString::new(host));
-        let cuser = try!(ffi::CString::new(username));
+    pub fn connect(host: &str, port: i32, username: &str) -> Result<Handle, Box<dyn Error>> {
+        let chost = ffi::CString::new(host)?;
+        let cuser = ffi::CString::new(username)?;
         let handle = match unsafe { kapi::khpu(chost.as_ptr(), port, cuser.as_ptr()) } {
-            h if h < 0 => return Err(Box::new(KError::new("Could not connect".to_string(), KErr::ConnectionFailed))),
-            0 => return Err(Box::new(KError::new("Wrong credentials".to_string(), KErr::AuthenticationFailed))),
-            h => h
+            h if h < 0 => {
+                return Err(Box::new(KError::new(
+                    "Could not connect".to_string(),
+                    KErr::ConnectionFailed,
+                )))
+            }
+            0 => {
+                return Err(Box::new(KError::new(
+                    "Wrong credentials".to_string(),
+                    KErr::AuthenticationFailed,
+                )))
+            }
+            h => h,
         };
+        let cq = ffi::CString::new("")?;
+        unsafe { kapi::k(handle, cq.as_ptr(), kvoid()) }; //memory allocation
         Ok(Handle {
             host: host.to_string(),
             username: username.to_string(),
-            port: port,
-            handle: handle
+            port,
+            handle,
         })
     }
 
-    pub fn query(&self, query: &str) -> Result<KOwned, Box<Error>> {
-        let cquery = try!(ffi::CString::new(query));
+    pub fn query(&self, query: &str) -> Result<KOwned, Box<dyn Error>> {
+        let cquery = ffi::CString::new(query)?;
         let kptr = unsafe { kapi::k(self.handle, cquery.as_ptr(), kvoid()) };
         if kptr.is_null() {
-            return Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)))
+            return Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
         }
-        Ok(unsafe { KOwned(&*kptr)} )
+        Ok(unsafe { KOwned(&*kptr) })
+    }
+
+    pub unsafe fn async_pub(&self, callback: &str, topic: *const K, object: *const K) {
+        let cbk = ffi::CString::new(callback).unwrap();
+        let kptr = kapi::k(-self.handle, cbk.as_ptr(), topic, object, kvoid());
+        if (&*kptr).t == -128 {
+            println!("Error sending async data");// Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
+            KOwned(&*kptr);
+        }
+    }
+
+
+    pub unsafe fn sync_get(&self, function: &str, object: *const K) -> Result<KOwned, Box<dyn Error>> {
+        let cbk = ffi::CString::new(function)?;
+        let kptr = kapi::k(self.handle, cbk.as_ptr(), object, kvoid());
+        if kptr.is_null() {
+            return Err(Box::new(KError::new("Query failed".to_string(), KErr::QueryFailed)));
+        }
+        Ok(KOwned(&*kptr))
     }
 
     pub fn close(&self) {
@@ -127,4 +158,3 @@ pub fn deserialize(ser: &KOwned) -> KResult<KOwned> {
         Err(KError::new("Invalid deserialization".to_string(), KErr::DecodeFailed))
     }
 }
-

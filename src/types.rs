@@ -12,7 +12,6 @@ pub type E = libc::c_float;
 pub type F = libc::c_double;
 pub type V = libc::c_void;
 
-
 #[repr(C)]
 pub struct K {
     pub m: libc::c_char,
@@ -45,10 +44,17 @@ impl K {
 impl fmt::Debug for K {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut vs = Vec::new();
-        vs.push(format!("Type:{}, Attr:{}, RefCt:{} Addr:{:p}",
-               self.t, self.u, self.r, self));
-        vs.push(format!("Sorted:{}, Unique:{}, Parted:{}, Grouped:{}", 
-                self.is_sorted(), self.is_unique(), self.is_parted(), self.is_grouped()));       
+        vs.push(format!(
+            "Type:{}, Attr:{}, RefCt:{} Addr:{:p}",
+            self.t, self.u, self.r, self
+        ));
+        vs.push(format!(
+            "Sorted:{}, Unique:{}, Parted:{}, Grouped:{}",
+            self.is_sorted(),
+            self.is_unique(),
+            self.is_parted(),
+            self.is_grouped()
+        ));
         let mut s = String::new();
         for v in self.union.iter() {
             s.push_str(&format!("{:02x}", v))
@@ -64,5 +70,7 @@ pub struct U {
 }
 
 impl ::std::default::Default for U {
-    fn default() -> Self { unsafe { zeroed() } }
+    fn default() -> Self {
+        unsafe { zeroed() }
+    }
 }
